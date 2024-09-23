@@ -1,74 +1,65 @@
 <template>
   <div class="temperature">
-    <h1>Temperature Sensor Data</h1>
-    <p v-if="loading" class="status">Loading temperature data...</p>
+    <h1>Temperature and Humidity Sensor Data</h1>
+    <p v-if="loading" class="status">Loading sensor data...</p>
     <p v-if="error" class="error">{{ error }}</p>
     <p v-if="temperature" class="temperature-data">
       Current Temperature: <span>{{ temperature }}°C</span>
+    </p>
+    <p v-if="humidity" class="humidity-data">
+      Current Humidity: <span>{{ humidity }}%</span>
     </p>
   </div>
 </template>
 
 <script>
+import { doc, getDoc } from "firebase/firestore"; // Use Firestore functions
+import { db } from "../../firebase.js"; 
+
 export default {
   data() {
     return {
       temperature: null,
+      humidity: null,
       loading: true,
       error: null,
+      intervalId: null, // Store the interval ID
     };
   },
   methods: {
-    fetchDummyTemperature() {
-      this.loading = true;
-      setTimeout(() => {
-        this.temperature = (Math.random() * 10 + 20).toFixed(2);
+    async fetchSensorDataFromFirestore() {
+      const sensorDocRef = doc(db, 'sensors', 'NodeMCU1');  // Reference to the specific document
+      
+      try {
+        const docSnapshot = await getDoc(sensorDocRef);  // Fetch the document
+        if (docSnapshot.exists()) {
+          this.temperature = docSnapshot.data().temp;  // Adjust according to your data structure
+          this.humidity = docSnapshot.data().humidity;  // Retrieve humidity field
+        } else {
+          this.error = "No sensor data found!";
+        }
+      } catch (error) {
+        this.error = error.message;
+      } finally {
         this.loading = false;
-      }, 1000);
+      }
+    },
+    startDataRefresh() {
+      this.intervalId = setInterval(() => {
+        this.loading = true; // Set loading state before fetching
+        this.fetchSensorDataFromFirestore(); // Fetch data every 2 seconds
+      }, 2000);
+    },
+    stopDataRefresh() {
+      clearInterval(this.intervalId); // Clear the interval when the component is destroyed
     }
   },
   mounted() {
-    this.fetchDummyTemperature();
-    setInterval(this.fetchDummyTemperature, 5000);
+    this.fetchSensorDataFromFirestore();  // Fetch data when the component mounts
+    this.startDataRefresh(); // Start the interval for refreshing data
+  },
+  beforeDestroy() {
+    this.stopDataRefresh(); // Stop refreshing when the component is destroyed
   }
 };
 </script>
-
-<style scoped>
-.temperature {
-  text-align: center;
-  margin: 2rem auto; /* Center the component with top and bottom margins */
-  padding: 2rem;
-  max-width: 600px; /* Limit the maximum width for better readability */
-  border-radius: 8px; /* Rounded corners for a softer look */
-  background-color: #f9f9f9; /* Light background for contrast */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-}
-
-h1 {
-  font-size: 2.5rem;
-  color: #333; /* Darker color for better readability */
-  margin-bottom: 1.5rem;
-}
-
-.status {
-  color: #007bff; /* Blue color for loading status */
-  font-size: 1.2rem;
-}
-
-.error {
-  color: #dc3545; /* Red color for error messages */
-  font-size: 1.2rem;
-}
-
-.temperature-data {
-  font-size: 1.5rem;
-  color: #333; /* Dark color for temperature data */
-}
-
-.temperature-data span {
-  font-weight: bold;
-  font-size: 1.75rem; /* Larger font size for temperature value */
-  color: #ff5722; /* Accent color for temperature value */
-}
-</style>
