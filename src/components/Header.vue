@@ -3,14 +3,12 @@ import Temp
   <header class="header">
     <div class="logo">
       <img src="" alt="Logo" />
-      <h1>Website Title</h1>
+      <h1>GROUP 5</h1>
     </div>
     <nav class="nav">
       <ul>
-        <li><a href="#">Home</a></li>
-        <li><a href="#">About</a></li>
+        <li><a href="/chart">Dashboard</a></li>
         <li><a href="/temperature">temperataure</a></li>
-        <li><a href="#">Contact</a></li>
       </ul>
     </nav>
   </header>
